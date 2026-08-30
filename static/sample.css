@@ -1,0 +1,22 @@
+.rainbow-text {
+  background: linear-gradient(to left, purple, #5050ff, green, orange, red);
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  -webkit-background-clip: text;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background: #121212;
+  }
+  body {
+    color: #ddd;
+  }
+  body a:link {
+    color: #7a9ad9;
+  }
+  body a:visited {
+    color: #c7a7e5;
+  }
+}
