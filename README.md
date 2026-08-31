@@ -4,17 +4,14 @@ Showcase my silly projects.
 By "silly", I mean the whole thing is in a webpage (no server side, just vanilla HTML, JS, CSS). I just need to have access to those without first downloading my Git repositories.
 
 ## Setup
-1. Run `grabfiles.py`. On each project directory created in `./scs/`, one HTML file will be renamed as `index.html`.
-2. Craft your own `index.html` and `404.html` in `./scs/`. The projects must be referenced in links (href) as `/project-dir/`.
-3. Either run, or build and run the web server:
+1. Build the project grabber (`grabproj.go`) and the web server (`main.go`):
 ```bash
-go run main.go
-```
-or
-```bash
+go build grabproj.go
 go build main.go
-./main
 ```
+2. Run the project grabber (`./grabproj`). On each project directory created in `./scs/`, one HTML file will be renamed as `index.html`. Also, you can input a template file to "display" the project in stdout; this is useful for creating HTML list.
+3. Craft your own `index.html` and `404.html` in `./scs/`. The projects must be referenced in links (href) as `/project-dir/`.
+4. Run the web server (`./main`).
 
 Note: port is set to `9876`.
 
