@@ -18,24 +18,6 @@ import (
     "path"
 )
 
-// adapted from https://stackoverflow.com/a/62747667
-func customHandler(fsPath string, page404 []byte) http.Handler {
-    fs := http.Dir(fsPath)
-    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-        cleanURL := path.Clean(r.URL.Path)
-        _, err := fs.Open(cleanURL)
-        if (cleanURL == "/static" || os.IsNotExist(err)) {
-            w.Header().Set("Content-Type", "text/html; charset=utf-8")
-            w.WriteHeader(http.StatusNotFound)
-            w.Write(page404)
-            return
-        }
-
-        http.FileServer(fs).ServeHTTP(w, r)
-    })
-}
-
-
 func main() {
     fsPath := "./scs"
 
@@ -55,4 +37,21 @@ func main() {
     fmt.Println("HTTP server is running on port " + port)
 
     log.Fatal(http.ListenAndServe(port, customHandler(fsPath, page404)))
+}
+
+func customHandler(fsPath string, page404 []byte) http.Handler {
+    // adapted from https://stackoverflow.com/a/62747667
+    fs := http.Dir(fsPath)
+    return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        cleanURL := path.Clean(r.URL.Path)
+        _, err := fs.Open(cleanURL)
+        if cleanURL == "/static" || cleanURL == "/project" || os.IsNotExist(err) {
+            w.Header().Set("Content-Type", "text/html; charset=utf-8")
+            w.WriteHeader(http.StatusNotFound)
+            w.Write(page404)
+            return
+        }
+
+        http.FileServer(fs).ServeHTTP(w, r)
+    })
 }

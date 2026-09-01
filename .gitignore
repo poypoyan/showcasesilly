@@ -1,3 +1,4 @@
 main
 grabproj
-*.json
+.temp-grabproj/
+scs/project/
