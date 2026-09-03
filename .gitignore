@@ -2,5 +2,3 @@ main
 grabproj
 .temp-grabproj/
 scs/project/
-*.json
-*.txt

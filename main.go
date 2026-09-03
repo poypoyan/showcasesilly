@@ -43,10 +43,11 @@ func customHandler(fsPath string, page404 []byte) http.Handler {
     // adapted from https://stackoverflow.com/a/62747667
     fs := http.Dir(fsPath)
     return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+        secureHeaders(w)
         cleanURL := path.Clean(r.URL.Path)
         _, err := fs.Open(cleanURL)
         if cleanURL == "/static" || cleanURL == "/project" || os.IsNotExist(err) {
-            w.Header().Set("Content-Type", "text/html; charset=utf-8")
+            w.Header().Set("content-Type", "text/html; charset=utf-8")
             w.WriteHeader(http.StatusNotFound)
             w.Write(page404)
             return
@@ -54,4 +55,12 @@ func customHandler(fsPath string, page404 []byte) http.Handler {
 
         http.FileServer(fs).ServeHTTP(w, r)
     })
+}
+
+func secureHeaders(w http.ResponseWriter) {
+    w.Header().Set("cross-origin-opener-policy", "same-origin")
+    w.Header().Set("referrer-policy", "same-origin")
+    w.Header().Set("strict-transport-security", "max-age=30; includeSubDomains") // set to 31536000 if done HTTPS setup
+    w.Header().Set("x-content-type-options", "nosniff")
+    w.Header().Set("x-frame-options", "DENY")
 }

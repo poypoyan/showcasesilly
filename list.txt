@@ -1,0 +1,4 @@
+<li><b>Function Words in Philippine Languages</b> (<a href="https://fwphlang.com">view page</a>, <a href="https://github.com/poypoyan/funcwords">source code</a>): Test external website</li>
+<li><b>Yet Another Blind Maze Game</b> (<a href="/project/js-game-yablindmaze/">view page</a>, <a href="https://codeberg.org/poypoyan/js-game-yablindmaze">source code</a>): Test whole repo</li>
+<li><b>Self-similar Impossible Rod</b> (<a href="/project/canvas-svg-experiments/">view page</a>, <a href="https://codeberg.org/poypoyan/canvas-svg-experiments">source code</a>): Test sub folder repo (& multiple html)</li>
+<li><b>Flower Tiling Maker</b> (<a href="/project/flower-tiling/">view page</a>, <a href="https://codeberg.org/poypoyan/canvas-svg-experiments">source code</a>): Test single HTML file in repo</li>

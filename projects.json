@@ -1,0 +1,27 @@
+[
+  {
+    "Name": "Function Words in Philippine Languages",
+    "Repo": "https://github.com/poypoyan/funcwords",
+    "Desc": "Test external website",
+    "Exweb": "https://fwphlang.com"
+  },
+  {
+    "Name": "Yet Another Blind Maze Game",
+    "Repo": "https://codeberg.org/poypoyan/js-game-yablindmaze",
+    "Desc": "Test whole repo"
+  },
+  {
+    "Name": "Self-similar Impossible Rod",
+    "Repo": "https://codeberg.org/poypoyan/canvas-svg-experiments",
+    "Rloc": "self-similar-impossible-rod",
+    "Desc": "Test sub folder repo (& multiple html)",
+    "Selidx": "impossible-rod-zoom.html"
+  },
+  {
+    "Name": "Flower Tiling Maker",
+    "Repo": "https://codeberg.org/poypoyan/canvas-svg-experiments",
+    "Rloc": "geometric-motifs/flower.html",
+    "Desc": "Test single HTML file in repo",
+    "Rename": "flower-tiling"
+  }
+]

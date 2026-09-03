@@ -3,7 +3,7 @@ The projects grabber.
 
 ./grabproj projects.json template.txt > list.txt
 
-Copies all HTML, CSS, JS files (not recursive) to /scs/projects/<proj-dir>.
+Copies all HTML, CSS, JS files (not recursive) to /scs/project/<project-dir-name>.
 
 Distributed under the MIT software license. See the accompanying file LICENSE or https://opensource.org/license/mit/.
 */
@@ -14,6 +14,7 @@ import (
     "bytes"
     "encoding/json/v2"
     "fmt"
+    "io"
     "log"
     "os"
     "os/exec"
@@ -49,7 +50,7 @@ type Project struct {
     Desc string     // description of project
     Exweb string    // external website
     Exext []string  // additional file extensions to copy
-    RLoc string     // location of file/directory inside repo
+    Rloc string     // location of file/directory inside repo
     Selidx string   // HTML file to select is case there are multiple HTML files
     Rename string   // rename project directory
 }
@@ -77,17 +78,17 @@ func process(p []byte, t string) {
     var projs []Project
     err := json.Unmarshal(p, &projs)
     if err != nil {
-        log.Println("JSON parsing error: %s", err.Error())
+        log.Printf("JSON parsing error: %v\n", err)
         return
     }
 
     for i, proj := range projs {
         if len(proj.Name) == 0 {
-            log.Println("Project #%d error: Name is empty.", i)
+            log.Printf("Project #%d error: Name is empty.\n", i)
             break
         }
         if len(proj.Repo) == 0 {
-            log.Println("Project #%d error: Repo is empty.", i)
+            log.Printf("Project #%d error: Repo is empty.\n", i)
             break
         }
 
@@ -95,7 +96,6 @@ func process(p []byte, t string) {
         proct.Name = proj.Name
         proct.Repo = proj.Repo
         proct.Desc = proj.Desc
-        proct.Page = "/404"   // for identifying if there's nothing to showcase
 
         // case 1: project is an external website
         if len(proj.Exweb) > 0 {
@@ -104,15 +104,14 @@ func process(p []byte, t string) {
             continue
         }
 
-        // extract repo name
+        // extract repo name and determine project-dir-name
         repoName := proj.Repo[strings.LastIndex(proj.Repo, "/") + 1:]
-        var projName string
+        var projDirName string
         if len(proj.Rename) > 0 {
-            projName = proj.Rename
+            projDirName = proj.Rename
         } else {
-            projName = repoName
+            projDirName = repoName
         }
-        proct.Page = "/" + projName
 
         // git clone
         tempRepoDir := tempPath + "/" + repoName
@@ -122,18 +121,56 @@ func process(p []byte, t string) {
             runGitClone(proj.Repo, tempRepoDir)
         }
 
-        // TODO: copy files
+        // setup repo and copy directories, and replacement for {Page} in template
+        tempProjPath := tempRepoDir + "/" + proj.Rloc
+        copyProjDir := destPath + "/" + projDirName
+        proct.Page = "/project/" + projDirName + "/"
+        os.Mkdir(copyProjDir, os.ModePerm)
+
+        // case 2: project is a single HTML file
+        if isHTMLFilePath(proj.Rloc) {
+            err = copyFile(tempProjPath, copyProjDir + "/index.html")
+            if err != nil {
+                log.Printf("Project #%d error: Sole HTML copy error: %v\n", i, err)
+                os.RemoveAll(copyProjDir)
+                continue
+            }
+            processTempl(proct, t)
+            continue
+        }
+
+        // case 3: project is a directory
+        listFiles := getFiles(tempProjPath, proj.Exext)
+        idxIdx := getIndexHTML(listFiles, proj.Selidx)
+        if idxIdx == -1 {
+            log.Printf("Project #%d error: No HTML file found.\n", i)
+            os.RemoveAll(copyProjDir)
+            continue
+        }
+
+        isCopyFail := false
+        for j, file := range listFiles {
+            if j == idxIdx {
+                err = copyFile(tempProjPath + "/" + file, copyProjDir + "/index.html")
+            } else {
+                err = copyFile(tempProjPath + "/" + file, copyProjDir + "/" + file)
+            }
+            if err != nil {
+                isCopyFail = true
+                os.RemoveAll(copyProjDir)
+                log.Printf("Project #%d error: Copy error among multiple files: %v.\n", i, err)
+                break
+            }
+        }
+        if isCopyFail {
+            continue
+        }
 
         processTempl(proct, t)
     }
 
     // clean temp
-    // os.RemoveAll(tempPath)
-}
-
-func processTempl(p ProcTempl, t string) {
-    repl := strings.NewReplacer("{Name}", p.Name, "{Repo}", p.Repo, "{Desc}", p.Desc, "{Page}", p.Page)
-    fmt.Print(repl.Replace(t))
+    os.RemoveAll(tempPath)
 }
 
 func runGitClone(url string, repoDir string) {
@@ -146,7 +183,69 @@ func runGitClone(url string, repoDir string) {
 
     err := cmd.Run()
     if err != nil {
-        log.Println("Git, " + stderrBuf.String())
+        log.Printf("Git, %s\n", stderrBuf.String())
     }
 }
 
+func isHTMLFilePath(filePath string) bool {
+    return strings.HasSuffix(filePath, ".html") || strings.HasSuffix(filePath, ".htm")
+}
+
+func getFiles(p string, exext []string) []string {
+    allExts := append([]string{"html", "htm", "css", "js"}, exext...)
+    var listFiles []string
+
+    entries, err := os.ReadDir(p)
+    if err != nil {
+        log.Printf("Failed to read directory: %v\n", err)
+        return listFiles
+    }
+
+    for _, entry := range entries {
+        if entry.IsDir() {
+            continue
+        }
+        for _, ext := range allExts {
+            if strings.HasSuffix(entry.Name(), "." + ext) {
+                listFiles = append(listFiles, entry.Name())
+                break
+            }
+        }
+    }
+    return listFiles
+}
+
+func getIndexHTML(files []string, altFile string) int {
+    for i, file := range files {
+        if file == altFile || isHTMLFilePath(file) {
+            return i
+        }
+    }
+    return -1
+}
+
+func copyFile(src string, dst string) error {
+    // adapted from https://zetcode.com/golang/copyfile/
+    fin, err := os.Open(src)
+    if err != nil {
+        return err
+    }
+    defer fin.Close()
+
+    fout, err := os.Create(dst)
+    if err != nil {
+        return err
+    }
+    defer fout.Close()
+
+    _, err = io.Copy(fout, fin)
+    if err != nil {
+        return err
+    }
+    return nil
+}
+
+func processTempl(p ProcTempl, t string) {
+    repl := strings.NewReplacer("{Name}", p.Name, "{Repo}", p.Repo, "{Desc}", p.Desc, "{Page}", p.Page)
+    fmt.Print(repl.Replace(t))
+}
