@@ -51,7 +51,7 @@ type Project struct {
     Exweb string    // external website
     Exext []string  // additional file extensions to copy
     Rloc string     // location of file/directory inside repo
-    Selidx string   // HTML file to select is case there are multiple HTML files
+    Selidx string   // HTML file to select in case there are multiple HTML files
     Rename string   // rename project directory
 }
 
@@ -140,7 +140,12 @@ func process(p []byte, t string) {
         }
 
         // case 3: project is a directory
-        listFiles := getFiles(tempProjPath, proj.Exext)
+        listFiles, err := getFiles(tempProjPath, proj.Exext)
+        if err != nil {
+            log.Printf("Project #%d error: Failed to read directory: %v\n", i, err)
+            os.RemoveAll(copyProjDir)
+            continue
+        }
         idxIdx := getIndexHTML(listFiles, proj.Selidx)
         if idxIdx == -1 {
             log.Printf("Project #%d error: No HTML file found.\n", i)
@@ -174,7 +179,7 @@ func process(p []byte, t string) {
 }
 
 func runGitClone(url string, repoDir string) {
-    // assumptions: 1) the repo exists and 2) it will always clone the main branch
+    // assumptions: 1) the repo exists and 2) it will always clone the default branch like "main"
     // there is no error handling for this, so if unexpected happens (e.g., asks for username),
     // just Ctrl+C, edit the JSON, and run again.
     cmd := exec.Command("git", "clone", url, repoDir)
@@ -191,14 +196,13 @@ func isHTMLFilePath(filePath string) bool {
     return strings.HasSuffix(filePath, ".html") || strings.HasSuffix(filePath, ".htm")
 }
 
-func getFiles(p string, exext []string) []string {
+func getFiles(p string, exext []string) ([]string, error) {
     allExts := append([]string{"html", "htm", "css", "js"}, exext...)
     var listFiles []string
 
     entries, err := os.ReadDir(p)
     if err != nil {
-        log.Printf("Failed to read directory: %v\n", err)
-        return listFiles
+        return listFiles, err
     }
 
     for _, entry := range entries {
@@ -212,7 +216,7 @@ func getFiles(p string, exext []string) []string {
             }
         }
     }
-    return listFiles
+    return listFiles, nil
 }
 
 func getIndexHTML(files []string, altFile string) int {
