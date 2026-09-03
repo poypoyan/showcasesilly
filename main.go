@@ -2,7 +2,7 @@
 The web server.
 
 Before running (go run main.go / go build main.go && ./main):
-    1. grabproj must be run so that the project folders are in the 'scs' directory.
+    1. grabproj must be run so that the project directories are in the 'scs/projects' directory.
     2. There should be an index.html and a 404.html in the 'scs' directory.
 
 Distributed under the MIT software license. See the accompanying file LICENSE or https://opensource.org/license/mit/.
@@ -12,9 +12,9 @@ package main
 
 import (
     "fmt"
-    "os"
     "log"
     "net/http"
+    "os"
     "path"
 )
 
