@@ -41,7 +41,7 @@ func main() {
         return
     }
 
-    process(projJSON, string(template))
+    process(projJSON, template)
 }
 
 type Project struct {
@@ -62,7 +62,7 @@ type ProcTempl struct {
     Page string
 }
 
-func process(p []byte, t string) {
+func process(p []byte, t []byte) {
     tempPath := "./.temp-grabproj"
     destPath := "./scs/project"
 
@@ -82,14 +82,16 @@ func process(p []byte, t string) {
         return
     }
 
+    tStr := string(t)
+
     for i, proj := range projs {
         if len(proj.Name) == 0 {
             log.Printf("Project #%d error: Name is empty.\n", i)
-            break
+            continue
         }
         if len(proj.Repo) == 0 {
             log.Printf("Project #%d error: Repo is empty.\n", i)
-            break
+            continue
         }
 
         var proct ProcTempl
@@ -100,7 +102,7 @@ func process(p []byte, t string) {
         // case 1: project is an external website
         if len(proj.Exweb) > 0 {
             proct.Page = proj.Exweb
-            processTempl(proct, t)
+            processTempl(proct, tStr)
             continue
         }
 
@@ -118,7 +120,11 @@ func process(p []byte, t string) {
         _, err = os.Stat(tempRepoDir)
         if os.IsNotExist(err) {
             os.Mkdir(tempRepoDir, os.ModePerm)
-            runGitClone(proj.Repo, tempRepoDir)
+            errStr := runGitClone(proj.Repo, tempRepoDir)
+            if errStr != "" {
+                log.Printf("Project #%d error: Git error: %s\n", i, errStr)
+                continue
+            }
         }
 
         // setup repo and copy directories, and replacement for {Page} in template
@@ -135,7 +141,7 @@ func process(p []byte, t string) {
                 os.RemoveAll(copyProjDir)
                 continue
             }
-            processTempl(proct, t)
+            processTempl(proct, tStr)
             continue
         }
 
@@ -171,14 +177,14 @@ func process(p []byte, t string) {
             continue
         }
 
-        processTempl(proct, t)
+        processTempl(proct, tStr)
     }
 
     // clean temp
     os.RemoveAll(tempPath)
 }
 
-func runGitClone(url string, repoDir string) {
+func runGitClone(url string, repoDir string) string {
     // assumptions: 1) the repo exists and 2) it will always clone the default branch like "main"
     // there is no error handling for this, so if unexpected happens (e.g., asks for username),
     // just Ctrl+C, edit the JSON, and run again.
@@ -188,8 +194,9 @@ func runGitClone(url string, repoDir string) {
 
     err := cmd.Run()
     if err != nil {
-        log.Printf("Git, %s\n", stderrBuf.String())
+        return stderrBuf.String()
     }
+    return ""
 }
 
 func isHTMLFilePath(filePath string) bool {
