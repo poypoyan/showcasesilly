@@ -70,10 +70,6 @@ func process(p []byte, t []byte) {
     os.RemoveAll(tempPath)
     os.RemoveAll(destPath)
 
-    // make dirs
-    os.Mkdir(tempPath, os.ModePerm)
-    os.Mkdir(destPath, os.ModePerm)
-
     // parse JSON
     var projs []Project
     err := json.Unmarshal(p, &projs)
@@ -81,6 +77,10 @@ func process(p []byte, t []byte) {
         log.Printf("JSON parsing error: %v\n", err)
         return
     }
+
+    // make dirs
+    os.Mkdir(tempPath, os.ModePerm)
+    os.Mkdir(destPath, os.ModePerm)
 
     tStr := string(t)
 
