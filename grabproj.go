@@ -139,6 +139,8 @@ func process(p []byte, t []byte) {
             if err != nil {
                 log.Printf("Project #%d error: Sole HTML copy error: %v\n", i, err)
                 os.RemoveAll(copyProjDir)
+                proct.Page = "/404"   // but still display with link to identifiable non-existent page
+                processTempl(proct, tStr)
                 continue
             }
             processTempl(proct, tStr)
@@ -150,12 +152,16 @@ func process(p []byte, t []byte) {
         if err != nil {
             log.Printf("Project #%d error: Failed to read directory: %v\n", i, err)
             os.RemoveAll(copyProjDir)
+            proct.Page = "/404"
+            processTempl(proct, tStr)
             continue
         }
         idxIdx := getIndexHTML(listFiles, proj.Selidx)
         if idxIdx == -1 {
             log.Printf("Project #%d error: No HTML file found.\n", i)
             os.RemoveAll(copyProjDir)
+            proct.Page = "/404"
+            processTempl(proct, tStr)
             continue
         }
 
@@ -167,13 +173,15 @@ func process(p []byte, t []byte) {
                 err = copyFile(tempProjPath + "/" + file, copyProjDir + "/" + file)
             }
             if err != nil {
+                log.Printf("Project #%d error: Copy error among multiple files: %v.\n", i, err)
                 isCopyFail = true
                 os.RemoveAll(copyProjDir)
-                log.Printf("Project #%d error: Copy error among multiple files: %v.\n", i, err)
                 break
             }
         }
         if isCopyFail {
+            proct.Page = "/404"
+            processTempl(proct, tStr)
             continue
         }
 
